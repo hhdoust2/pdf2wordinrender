@@ -13,15 +13,14 @@
         button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 5px; border: none; background-color: #28a745; color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: background 0.2s; }
         button:hover { background-color: #218838; }
         #status { margin-top: 20px; font-weight: bold; color: #444; line-height: 1.6; }
-        .loading-dots::after { content: ' .'; animation: dots 1s steps(5, end) infinite; }
-        @keyframes dots { 0%, 20% { content: ' .'; } 40% { content: ' ..'; } 60% { content: ' ...'; } 80%, 100% { content: ''; } }
+        code { color:red; background:#fff3f3; padding:8px; display:block; margin-top:10px; border:1px solid #ffcccc; border-radius:4px; font-family: monospace; text-align: left; direction: ltr; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>📄 مبدل رایگان و نامحدود PDF به متن فارسی</h1>
-    <p>پردازش تا ۵۰۰ صفحه با قدرت سرورهای ابری رندر</p>
+    <p>پردازش بهینه صفحات با قدرت سرورهای ابری رندر</p>
     
     <input type="file" id="pdfFile" accept=".pdf">
     <button onclick="startOCR()">🚀 شروع عملیات استخراج متن (OCR)</button>
@@ -31,7 +30,6 @@
 </div>
 
 <script>
-    // آدرس اختصاصی سرور رندر شما به درستی تنظیم شد:
     const RENDER_API_URL = "https://pdf2word-sujy.onrender.com";
 
     async function startOCR() {
@@ -44,8 +42,20 @@
             return; 
         }
         
-        statusDiv.innerHTML = "<span class='loading-dots'>⏳ در حال ارسال فایل و استخراج متون فارسی روی سرور... لطفاً این صفحه را نبندید</span><br><small style='color:#777;'>پردازش فایل‌های حجیم ممکن است چند دقیقه طول بکشد.</small>";
         downloadArea.innerHTML = "";
+        
+        // مرحله ۱: بیدار کردن سرور (Ping)
+        statusDiv.innerHTML = "⏳ در حال بیدار کردن سرور ابری (ممکن است تا ۱ دقیقه طول بکشد)...";
+        try {
+            const ping = await fetch(`${RENDER_API_URL}/`);
+            if(!ping.ok) throw new Error("سرور پاسخگو نیست");
+        } catch(e) {
+            statusDiv.innerHTML = "⚠️ سرور در حال بیدار شدن است، لطفاً ۳۰ ثانیه دیگر دکمه را مجدداً فشار دهید.";
+            return;
+        }
+
+        // مرحله ۲: ارسال فایل اصلی برای پردازش
+        statusDiv.innerHTML = "⚙️ سرور آماده شد. در حال ارسال فایل و انجام پردازش OCR... این صفحه را نبندید.";
         
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
@@ -57,7 +67,8 @@
             });
             
             if (!response.ok) {
-                throw new Error('خطا در پردازش فایل توسط سرور');
+                const errText = await response.text();
+                throw new Error(`خطای سرور: ${response.status} - ${errText}`);
             }
             
             const blob = await response.blob();
@@ -70,7 +81,8 @@
                 </a>`;
             
         } catch (error) {
-            statusDiv.innerHTML = "<span style='color: #dc3545;'>❌ مشکلی در پردازش پیش آمد.</span><br><small style='color:#777;'>اگر سرور بیش از ۱۵ دقیقه بدون استفاده بوده، در حال بیدار شدن است. لطفاً ۱ الی ۲ دقیقه دیگر دوباره دکمه را بزنید.</small>";
+            statusDiv.innerHTML = "❌ مشکلی در ارتباط یا پردازش پیش آمد.";
+            statusDiv.innerHTML += `<code>جزئیات فنی خطا: ${error.message}</code>`;
             console.error(error);
         }
     }
