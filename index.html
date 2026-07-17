@@ -32,59 +32,49 @@
 <script>
     const RENDER_API_URL = "https://pdf2word-sujy.onrender.com";
 
-    async function startOCR() {
-        const fileInput = document.getElementById('pdfFile');
-        const statusDiv = document.getElementById('status');
-        const downloadArea = document.getElementById('downloadArea');
+async function startOCR() {
+    const fileInput = document.getElementById('pdfFile');
+    const statusDiv = document.getElementById('status');
+    const downloadArea = document.getElementById('downloadArea');
+    
+    if (fileInput.files.length === 0) { 
+        alert('لطفاً ابتدا یک فایل PDF انتخاب کنید.'); 
+        return; 
+    }
+    
+    downloadArea.innerHTML = "";
+    statusDiv.innerHTML = "⏳ در حال ارسال فایل به سرور و انجام عملیات OCR... (اگر سرور خواب باشد ممکن است ۱ الی ۲ دقیقه طول بکشد، لطفاً صفحه را نبندید)";
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    
+    try {
+        const response = await fetch(`${RENDER_API_URL}/process-pdf`, {
+            method: 'POST',
+            body: formData,
+            // حذف هدرهای پیچیده برای دور زدن محدودیت مرورگر
+            mode: 'cors'
+        });
         
-        if (fileInput.files.length === 0) { 
-            alert('لطفاً ابتدا یک فایل PDF انتخاب کنید.'); 
-            return; 
+        if (!response.ok) {
+            throw new Error(`پاسخ ناوفق سرور با کد: ${response.status}`);
         }
         
-        downloadArea.innerHTML = "";
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
         
-        // مرحله ۱: بیدار کردن سرور (Ping)
-        statusDiv.innerHTML = "⏳ در حال بیدار کردن سرور ابری (ممکن است تا ۱ دقیقه طول بکشد)...";
-        try {
-            const ping = await fetch(`${RENDER_API_URL}/`);
-            if(!ping.ok) throw new Error("سرور پاسخگو نیست");
-        } catch(e) {
-            statusDiv.innerHTML = "⚠️ سرور در حال بیدار شدن است، لطفاً ۳۰ ثانیه دیگر دکمه را مجدداً فشار دهید.";
-            return;
-        }
+        statusDiv.innerHTML = "<span style='color: #28a745;'>✅ متن با موفقیت استخراج شد!</span>";
+        downloadArea.innerHTML = `
+            <a href="${downloadUrl}" download="OCR_Result_${Date.now()}.txt">
+                <button style="background-color: #007bff;">📥 دانلود فایل متنی خروجی (TXT)</button>
+            </a>`;
+        
+    } catch (error) {
+        statusDiv.innerHTML = "❌ مشکلی در ارتباط یا پردازش پیش آمد.";
+        statusDiv.innerHTML += `<code>جزئیات فنی خطا: ${error.message}</code>`;
+        console.error(error);
+    }
 
-        // مرحله ۲: ارسال فایل اصلی برای پردازش
-        statusDiv.innerHTML = "⚙️ سرور آماده شد. در حال ارسال فایل و انجام پردازش OCR... این صفحه را نبندید.";
-        
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
-        
-        try {
-            const response = await fetch(`${RENDER_API_URL}/process-pdf`, {
-                method: 'POST',
-                body: formData
-            });
-            
-            if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(`خطای سرور: ${response.status} - ${errText}`);
-            }
-            
-            const blob = await response.blob();
-            const downloadUrl = window.URL.createObjectURL(blob);
-            
-            statusDiv.innerHTML = "<span style='color: #28a745;'>✅ متن با موفقیت استخراج شد!</span>";
-            downloadArea.innerHTML = `
-                <a href="${downloadUrl}" download="OCR_Result_${Date.now()}.txt">
-                    <button style="background-color: #007bff;">📥 دانلود فایل متنی خروجی (TXT)</button>
-                </a>`;
-            
-        } catch (error) {
-            statusDiv.innerHTML = "❌ مشکلی در ارتباط یا پردازش پیش آمد.";
-            statusDiv.innerHTML += `<code>جزئیات فنی خطا: ${error.message}</code>`;
-            console.error(error);
-        }
     }
 </script>
 
