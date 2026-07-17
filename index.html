@@ -13,7 +13,6 @@
         button { width: 100%; padding: 14px; margin: 10px 0; border-radius: 5px; border: none; background-color: #28a745; color: white; font-weight: bold; font-size: 16px; cursor: pointer; transition: background 0.2s; }
         button:hover { background-color: #218838; }
         #status { margin-top: 20px; font-weight: bold; color: #444; line-height: 1.6; }
-        code { color:red; background:#fff3f3; padding:8px; display:block; margin-top:10px; border:1px solid #ffcccc; border-radius:4px; font-family: monospace; text-align: left; direction: ltr; }
     </style>
 </head>
 <body>
@@ -32,49 +31,45 @@
 <script>
     const RENDER_API_URL = "https://pdf2word-sujy.onrender.com";
 
-async function startOCR() {
-    const fileInput = document.getElementById('pdfFile');
-    const statusDiv = document.getElementById('status');
-    const downloadArea = document.getElementById('downloadArea');
-    
-    if (fileInput.files.length === 0) { 
-        alert('لطفاً ابتدا یک فایل PDF انتخاب کنید.'); 
-        return; 
-    }
-    
-    downloadArea.innerHTML = "";
-    statusDiv.innerHTML = "⏳ در حال ارسال فایل به سرور و انجام عملیات OCR... (اگر سرور خواب باشد ممکن است ۱ الی ۲ دقیقه طول بکشد، لطفاً صفحه را نبندید)";
-    
-    const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
-    
-    try {
-        const response = await fetch(`${RENDER_API_URL}/process-pdf`, {
-            method: 'POST',
-            body: formData,
-            // حذف هدرهای پیچیده برای دور زدن محدودیت مرورگر
-            mode: 'cors'
-        });
+    async function startOCR() {
+        const fileInput = document.getElementById('pdfFile');
+        const statusDiv = document.getElementById('status');
+        const downloadArea = document.getElementById('downloadArea');
         
-        if (!response.ok) {
-            throw new Error(`پاسخ ناوفق سرور با کد: ${response.status}`);
+        if (fileInput.files.length === 0) { 
+            alert('لطفاً ابتدا یک فایل PDF انتخاب کنید.'); 
+            return; 
         }
         
-        const blob = await response.blob();
-        const downloadUrl = window.URL.createObjectURL(blob);
+        downloadArea.innerHTML = "";
+        statusDiv.innerHTML = "⏳ در حال ارسال فایل به سرور و فرآیند OCR... لطفاً صفحه را نبندید و صبور باشید.";
         
-        statusDiv.innerHTML = "<span style='color: #28a745;'>✅ متن با موفقیت استخراج شد!</span>";
-        downloadArea.innerHTML = `
-            <a href="${downloadUrl}" download="OCR_Result_${Date.now()}.txt">
-                <button style="background-color: #007bff;">📥 دانلود فایل متنی خروجی (TXT)</button>
-            </a>`;
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
         
-    } catch (error) {
-        statusDiv.innerHTML = "❌ مشکلی در ارتباط یا پردازش پیش آمد.";
-        statusDiv.innerHTML += `<code>جزئیات فنی خطا: ${error.message}</code>`;
-        console.error(error);
-    }
-
+        try {
+            const response = await fetch(`${RENDER_API_URL}/process-pdf`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                throw new Error(`خطای پردازش سرور: ${response.status}`);
+            }
+            
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            
+            statusDiv.innerHTML = "<span style='color: #28a745;'>✅ متن با موفقیت استخراج شد!</span>";
+            downloadArea.innerHTML = `
+                <a href="${downloadUrl}" download="OCR_Result_${Date.now()}.txt">
+                    <button style="background-color: #007bff;">📥 دانلود فایل متنی خروجی (TXT)</button>
+                </a>`;
+            
+        } catch (error) {
+            statusDiv.innerHTML = `<span style='color: #dc3545;'>❌ خطا در پردازش یا ارتباط با شبکه پیش آمد.</span><br><small style='color:#777;'>دلیل: ${error.message}</small>`;
+            console.error(error);
+        }
     }
 </script>
 
