@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مبدل PDF به متن فارسی | OCR ابری</title>
+    <title>مبدل PDF به فایل ورد فارسی | OCR ابری</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -163,17 +163,17 @@
 <body>
 
 <div class="container">
-    <h1>📄 سیستم استخراج متن از PDF (تاریک و شیک)</h1>
-    <p>موتور هوشمند پردازش ابری اسناد فارسی</p>
+    <h1>📄 مبدل ابری PDF به فایل ورد فارسی (Word)</h1>
+    <p>استخراج باکیفیت و راست‌چین با موتور هوشمند ابری</p>
     
     <div class="upload-area">
         <span class="upload-icon">📥</span>
         <span class="upload-text" id="fileLabel">کلیک کنید یا فایل PDF را اینجا رها کنید</span>
-        <span class="upload-hint">حداکثر حجم پیشنهادی: ۵۰ مگابایت</span>
+        <span class="upload-hint">فرمت فایل خروجی تحویلی: DOCX</span>
         <input type="file" id="pdfFile" accept=".pdf" onchange="updateFileName()">
     </div>
     
-    <button onclick="startOCR()">🚀 شروع پردازش هوشمند OCR</button>
+    <button onclick="startOCR()">🚀 شروع تبدیل به فایل ورد</button>
     
     <div id="status"></div>
     <div id="downloadArea"></div>
@@ -202,7 +202,7 @@
         }
         
         downloadArea.innerHTML = "";
-        statusDiv.innerHTML = "<span style='color: #3b82f6;'>⏳ در حال اتصال به سرور و پردازش صفحات PDF... لطفاً منتظر بمانید.</span>";
+        statusDiv.innerHTML = "<span style='color: #3b82f6;'>⏳ در حال پردازش صفحات و ساخت سند ورد... لطفاً منتظر بمانید.</span>";
         
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
@@ -215,16 +215,16 @@
             });
             
             if (!response.ok) {
-                throw new Error(`پاسخ ناموفق از سرور ابری رندر با کد خطا: ${response.status}`);
+                throw new Error(`خطای سرور با کد: ${response.status}`);
             }
             
             const blob = await response.blob();
             const downloadUrl = window.URL.createObjectURL(blob);
             
-            statusDiv.innerHTML = "<span style='color: #10b981; font-weight: bold;'>✅ فرآیند استخراج متن با موفقیت به پایان رسید!</span>";
+            statusDiv.innerHTML = "<span style='color: #10b981; font-weight: bold;'>✅ تبدیل با موفقیت انجام شد!</span>";
             downloadArea.innerHTML = `
-                <a href="${downloadUrl}" download="OCR_Result_${Date.now()}.txt" style="text-decoration: none;">
-                    <button class="btn-download">📥 دانلود فایل متنی نهایی (TXT)</button>
+                <a href="${downloadUrl}" download="OCR_Result_${Date.now()}.docx" style="text-decoration: none;">
+                    <button class="btn-download">📥 دانلود فایل ورد نهایی (DOCX)</button>
                 </a>`;
             
         } catch (error) {
