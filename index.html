@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مبدل PDF به فایل ورد فارسی | OCR ابری</title>
+    <title>مبدل PDF به فایل ورد فارسی | OCR ابری بدون فیلترشکن</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -164,7 +164,7 @@
 
 <div class="container">
     <h1>📄 مبدل ابری PDF به فایل ورد فارسی (Word)</h1>
-    <p>استخراج باکیفیت و راست‌چین با موتور هوشمند ابری</p>
+    <p>استخراج راست‌چین و بدون فیلترشکن با پروکسی اختصاصی کلادفلر</p>
     
     <div class="upload-area">
         <span class="upload-icon">📥</span>
@@ -180,6 +180,10 @@
 </div>
 
 <script>
+    // ⚠️ آدرس ورکر کلادفلر خود را بدون اسلش نهایی (/) در خط پایین قرار دهید:
+    const WORKER_URL = "https://wandering-glitter-b60f.hdhot.workers.dev"; 
+    
+    // آدرس سرور اصلی رندر شما
     const RENDER_API_URL = "https://pdf2word-sujy.onrender.com";
 
     function updateFileName() {
@@ -202,20 +206,21 @@
         }
         
         downloadArea.innerHTML = "";
-        statusDiv.innerHTML = "<span style='color: #3b82f6;'>⏳ در حال پردازش صفحات و ساخت سند ورد... لطفاً منتظر بمانید.</span>";
+        statusDiv.innerHTML = "<span style='color: #3b82f6;'>⏳ در حال ارسال فایل از طریق تونل کلادفلر... لطفاً منتظر بمانید.</span>";
         
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
         
         try {
-            const response = await fetch(`${RENDER_API_URL}/process-pdf`, {
+            // اتصال مستقیم و ترکیب دو آدرس بدون نیاز به کلید امنیتی
+            const response = await fetch(`${WORKER_URL}/${RENDER_API_URL}/process-pdf`, {
                 method: 'POST',
                 body: formData,
                 mode: 'cors'
             });
             
             if (!response.ok) {
-                throw new Error(`خطای سرور با کد: ${response.status}`);
+                throw new Error(`خطای پروکسی یا سرور ابری با کد: ${response.status}`);
             }
             
             const blob = await response.blob();
@@ -228,7 +233,7 @@
                 </a>`;
             
         } catch (error) {
-            statusDiv.innerHTML = "<span style='color: #ef4444;'>❌ خطایی در شبکه یا پردازش رخ داد.</span>";
+            statusDiv.innerHTML = "<span style='color: #ef4444;'>❌ خطایی در شبکه، پروکسی یا پردازش رخ داد.</span>";
             statusDiv.innerHTML += `<div class="error-box">Error Details: ${error.message}</div>`;
             console.error(error);
         }
