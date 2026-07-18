@@ -196,48 +196,53 @@
     }
 
     async function startOCR() {
-        const fileInput = document.getElementById('pdfFile');
-        const statusDiv = document.getElementById('status');
-        const downloadArea = document.getElementById('downloadArea');
+    const fileInput = document.getElementById('pdfFile');
+    const statusDiv = document.getElementById('status');
+    const downloadArea = document.getElementById('downloadArea');
+    
+    if (fileInput.files.length === 0) { alert('لطفاً ابتدا یک فایل PDF انتخاب کنید.'); return; }
+    
+    downloadArea.innerHTML = "";
+    statusDiv.innerHTML = "<span style='color: #3b82f6;'>⏳ فایل با موفقیت ارسال شد. در حال استخراج متن در پس‌زمینه سرور...</span>";
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    
+    try {
+        // ۱. ارسال فایل و گرفتن شماره توکن پردازش
+        const response = await fetch(`${WORKER_URL}/${RENDER_API_URL}/process-pdf`, {
+            method: 'POST',
+            body: formData,
+            mode: 'cors'
+        });
         
-        if (fileInput.files.length === 0) { 
-            alert('لطفاً ابتدا یک فایل PDF انتخاب کنید.'); 
-            return; 
-        }
+        const result = await response.json();
+        const taskId = result.task_id;
         
-        downloadArea.innerHTML = "";
-        statusDiv.innerHTML = "<span style='color: #3b82f6;'>⏳ در حال ارسال فایل از طریق تونل کلادفلر... لطفاً منتظر بمانید.</span>";
-        
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
-        
-        try {
-            // اتصال مستقیم و ترکیب دو آدرس بدون نیاز به کلید امنیتی
-            const response = await fetch(`${WORKER_URL}/${RENDER_API_URL}/process-pdf`, {
-                method: 'POST',
-                body: formData,
-                mode: 'cors'
-            });
+        // ۲. چک کردن وضعیت پردازش هر ۵ ثانیه یک‌بار (جلوگیری از تایم‌اوت ۵۲۴ کلادفلر)
+        const checkStatusInterval = setInterval(async () => {
+            const statusResponse = await fetch(`${WORKER_URL}/${RENDER_API_URL}/get-status/${taskId}`);
+            const statusData = await statusResponse.json();
             
-            if (!response.ok) {
-                throw new Error(`خطای پروکسی یا سرور ابری با کد: ${response.status}`);
+            if (statusData.status === "completed") {
+                clearInterval(checkStatusInterval);
+                statusDiv.innerHTML = "<span style='color: #10b981; font-weight: bold;'>✅ تبدیل با موفقیت انجام شد!</span>";
+                downloadArea.innerHTML = `
+                    <a href="${WORKER_URL}/${RENDER_API_URL}/download/${taskId}" style="text-decoration: none;">
+                        <button class="btn-download">📥 دانلود فایل ورد نهایی (DOCX)</button>
+                    </a>`;
+            } else if (statusData.status === "failed") {
+                clearInterval(checkStatusInterval);
+                statusDiv.innerHTML = `<span style='color: #ef4444;'>❌ خطا در پردازش فایل: ${statusData.error}</span>`;
             }
-            
-            const blob = await response.blob();
-            const downloadUrl = window.URL.createObjectURL(blob);
-            
-            statusDiv.innerHTML = "<span style='color: #10b981; font-weight: bold;'>✅ تبدیل با موفقیت انجام شد!</span>";
-            downloadArea.innerHTML = `
-                <a href="${downloadUrl}" download="OCR_Result_${Date.now()}.docx" style="text-decoration: none;">
-                    <button class="btn-download">📥 دانلود فایل ورد نهایی (DOCX)</button>
-                </a>`;
-            
-        } catch (error) {
-            statusDiv.innerHTML = "<span style='color: #ef4444;'>❌ خطایی در شبکه، پروکسی یا پردازش رخ داد.</span>";
-            statusDiv.innerHTML += `<div class="error-box">Error Details: ${error.message}</div>`;
-            console.error(error);
-        }
+        }, 5000);
+        
+    } catch (error) {
+        statusDiv.innerHTML = "<span style='color: #ef4444;'>❌ خطایی در ارتباط رخ داد.</span>";
+        statusDiv.innerHTML += `<div class="error-box">Details: ${error.message}</div>`;
     }
+}
+
 </script>
 
 </body>
