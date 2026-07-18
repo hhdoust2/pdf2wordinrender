@@ -42,7 +42,7 @@
         }
         
         downloadArea.innerHTML = "";
-        statusDiv.innerHTML = "⏳ در حال ارسال فایل به سرور و فرآیند OCR... لطفاً صفحه را نبندید و صبور باشید.";
+        statusDiv.innerHTML = "⏳ در حال ارسال و تبدیل فایل روی سرور ابری... لطفاً صفحه را نبندید.";
         
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
@@ -50,11 +50,12 @@
         try {
             const response = await fetch(`${RENDER_API_URL}/process-pdf`, {
                 method: 'POST',
-                body: formData
+                body: formData,
+                mode: 'cors'
             });
             
             if (!response.ok) {
-                throw new Error(`خطای پردازش سرور: ${response.status}`);
+                throw new Error(`خطای کد سرور: ${response.status}`);
             }
             
             const blob = await response.blob();
@@ -67,7 +68,7 @@
                 </a>`;
             
         } catch (error) {
-            statusDiv.innerHTML = `<span style='color: #dc3545;'>❌ خطا در پردازش یا ارتباط با شبکه پیش آمد.</span><br><small style='color:#777;'>دلیل: ${error.message}</small>`;
+            statusDiv.innerHTML = `<span style='color: #dc3545;'>❌ خطای ارتباط با شبکه رخ داد.</span><br><small style='color:#555;'>جزئیات: ${error.message}</small>`;
             console.error(error);
         }
     }
